@@ -14,48 +14,48 @@ import (
 
 var progress = make(map[string]float64)
 var mutex sync.RWMutex
-var args []string
+var urls []string
 
 func main() {
-	args = os.Args[1:]
+	urls = os.Args[1:]
 
-	if len(args) == 0 {
+	if len(urls) == 0 {
 		fmt.Println("Please provide URLs list.")
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(len(args))
+	wg.Add(len(urls))
 
 	var header string
-	for _, a := range args {
-		header = fmt.Sprintf("%s\t%s", header, path.Base(a))
-		progress[a] = 0
+	for _, url := range urls {
+		header = fmt.Sprintf("%s\t%s", header, path.Base(url))
+		progress[url] = 0
 	}
 	fmt.Println(header)
 
 	go func() {
 		for {
-			printStatus()
+			printProgress()
 			time.Sleep(time.Second)
 		}
 	}()
 
-	for _, a := range args {
-		go download(a, &wg)
+	for _, url := range urls {
+		go download(url, &wg)
 	}
 
 	wg.Wait()
-	printStatus()
+	printProgress()
 }
 
-func printStatus() {
-	var result string
-	for _, a := range args {
+func printProgress() {
+	var row string
+	for _, url := range urls {
 		mutex.Lock()
-		result = fmt.Sprintf("%s\t%3.f%%", result, progress[a])
+		row = fmt.Sprintf("%s\t%3.f%%", row, progress[url])
 		mutex.Unlock()
 	}
-	fmt.Println(result)
+	fmt.Println(row)
 }
 
 func download(url string, wg *sync.WaitGroup) {
@@ -70,13 +70,12 @@ func download(url string, wg *sync.WaitGroup) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer resp.Body.Close()
 
 	size, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
 
 	counter := &Counter{
-		UpdateStatus: func(s int) {
+		UpdateProgress: func(s int) {
 			mutex.RLock()
 			progress[url] += float64(s) / float64(size) * 100
 			mutex.RUnlock()
@@ -92,11 +91,11 @@ func download(url string, wg *sync.WaitGroup) {
 }
 
 type Counter struct {
-	UpdateStatus func(int)
+	UpdateProgress func(int)
 }
 
-func (c *Counter) Write(p []byte) (int, error) {
-	n := len(p)
-	c.UpdateStatus(n)
+func (c *Counter) Write(chunck []byte) (int, error) {
+	n := len(chunck)
+	c.UpdateProgress(n)
 	return n, nil
 }
