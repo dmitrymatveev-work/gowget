@@ -1,21 +1,22 @@
 package main
 
 import (
-	"io"
-	"strconv"
-	"net/http"
-	"log"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"os"
+	"path"
+	"strconv"
 	"sync"
 	"time"
-	"path"
 )
 
-var statuses map[string]float64 = make(map[string]float64)
+var progress map[string]float64 = make(map[string]float64)
+var args []string
 
 func main() {
-	args := os.Args[1:]
+	args = os.Args[1:]
 
 	if len(args) == 0 {
 		fmt.Println("Please provide URLs list.")
@@ -27,7 +28,7 @@ func main() {
 	var header string
 	for _, a := range args {
 		header = fmt.Sprintf("%s\t%s", header, path.Base(a))
-		statuses[a] = 0
+		progress[a] = 0
 	}
 	fmt.Println(header)
 
@@ -43,13 +44,13 @@ func main() {
 	}
 
 	wg.Wait()
-	printStatus();
+	printStatus()
 }
 
 func printStatus() {
 	var result string
-	for _, s := range statuses {
-		result = fmt.Sprintf("%s\t%d%%", result, int(s))
+	for _, a := range args {
+		result = fmt.Sprintf("%s\t%3.f%%", result, progress[a])
 	}
 	fmt.Println(result)
 }
@@ -71,9 +72,9 @@ func download(url string, wg *sync.WaitGroup) {
 
 	size, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
 
-	counter := &Counter {
+	counter := &Counter{
 		UpdateStatus: func(s int) {
-			statuses[url] += float64(s) / float64(size) * 100
+			progress[url] += float64(s) / float64(size) * 100
 		},
 	}
 
