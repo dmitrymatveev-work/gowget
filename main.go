@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"strconv"
 	"net/http"
 	"log"
@@ -11,7 +12,7 @@ import (
 	"path"
 )
 
-var statuses map[string]int = make(map[string]int)
+var statuses map[string]float64 = make(map[string]float64)
 
 func main() {
 	args := os.Args[1:]
@@ -42,23 +43,24 @@ func main() {
 	}
 
 	wg.Wait()
+	printStatus();
 }
 
 func printStatus() {
 	var result string
-	for _, v := range statuses {
-		result = fmt.Sprintf("%s\t%d%%", result, v)
+	for _, s := range statuses {
+		result = fmt.Sprintf("%s\t%d%%", result, int(s))
 	}
 	fmt.Println(result)
 }
 
 func download(url string, wg *sync.WaitGroup) {
 	fileName := path.Base(url)
-	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	out, err := os.Create(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer out.Close()
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -69,9 +71,26 @@ func download(url string, wg *sync.WaitGroup) {
 
 	size, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
 
-	fmt.Println(size)
+	counter := &Counter {
+		UpdateStatus: func(s int) {
+			statuses[url] += float64(s) / float64(size) * 100
+		},
+	}
 
-	f.WriteString(fmt.Sprintf("%v", size))
+	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	wg.Done()
+}
+
+type Counter struct {
+	UpdateStatus func(int)
+}
+
+func (c *Counter) Write(p []byte) (int, error) {
+	n := len(p)
+	c.UpdateStatus(n)
+	return n, nil
 }
