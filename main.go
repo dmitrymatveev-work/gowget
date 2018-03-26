@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-var progress map[string]float64 = make(map[string]float64)
+var progress = make(map[string]float64)
+var mutex sync.RWMutex
 var args []string
 
 func main() {
@@ -50,7 +51,9 @@ func main() {
 func printStatus() {
 	var result string
 	for _, a := range args {
+		mutex.Lock()
 		result = fmt.Sprintf("%s\t%3.f%%", result, progress[a])
+		mutex.Unlock()
 	}
 	fmt.Println(result)
 }
@@ -74,7 +77,9 @@ func download(url string, wg *sync.WaitGroup) {
 
 	counter := &Counter{
 		UpdateStatus: func(s int) {
+			mutex.RLock()
 			progress[url] += float64(s) / float64(size) * 100
+			mutex.RUnlock()
 		},
 	}
 
