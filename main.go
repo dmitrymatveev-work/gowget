@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"fmt"
 	"os"
 	"sync"
@@ -50,7 +51,17 @@ func printStatus() {
 }
 
 func download(url string, wg *sync.WaitGroup) {
+	fileName := path.Base(url)
+	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
 	statuses[url] = 100
 	time.Sleep(2*time.Second)
+
+	f.WriteString("Test")
+
 	wg.Done()
 }
