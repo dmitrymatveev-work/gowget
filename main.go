@@ -3,14 +3,25 @@ package main
 import (
 	"fmt"
 	"os"
+	"sync"
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	args := os.Args[1:]
+
+	if len(args) == 0 {
 		fmt.Println("Please provide URLs list.")
 	}
 
-	for _, a := range os.Args[1:] {
-		fmt.Println(a)
-	}
+	var wg sync.WaitGroup
+	wg.Add(len(args))
+
+	go func() {
+		for _, a := range os.Args[1:] {
+			fmt.Println(a)
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
 }
