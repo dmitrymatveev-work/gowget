@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"path"
 )
 
 var statuses map[string]int = make(map[string]int)
@@ -19,9 +20,12 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(len(args))
 
+	var header string
 	for _, a := range args {
+		header = fmt.Sprintf("%s\t%s", header, path.Base(a))
 		statuses[a] = 0
 	}
+	fmt.Println(header)
 
 	go func() {
 		for {
