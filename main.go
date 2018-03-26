@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+	"net/http"
 	"log"
 	"fmt"
 	"os"
@@ -58,10 +60,18 @@ func download(url string, wg *sync.WaitGroup) {
 	}
 	defer f.Close()
 
-	statuses[url] = 100
-	time.Sleep(2*time.Second)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	f.WriteString("Test")
+	defer resp.Body.Close()
+
+	size, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
+
+	fmt.Println(size)
+
+	f.WriteString(fmt.Sprintf("%v", size))
 
 	wg.Done()
 }
