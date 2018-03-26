@@ -30,13 +30,9 @@ func main() {
 		}
 	}()
 
-	go func() {
-		for _, a := range args {
-			statuses[a] = 100
-			time.Sleep(2*time.Second)
-			wg.Done()
-		}
-	}()
+	for _, a := range args {
+		go download(a, &wg)
+	}
 
 	wg.Wait()
 }
@@ -47,4 +43,10 @@ func printStatus() {
 		result = fmt.Sprintf("%s\t%d%%", result, v)
 	}
 	fmt.Println(result)
+}
+
+func download(url string, wg *sync.WaitGroup) {
+	statuses[url] = 100
+	time.Sleep(2*time.Second)
+	wg.Done()
 }
