@@ -94,8 +94,8 @@ type Counter struct {
 	UpdateProgress func(int)
 }
 
-func (c *Counter) Write(chunck []byte) (int, error) {
-	n := len(chunck)
+func (c *Counter) Write(chunk []byte) (int, error) {
+	n := len(chunk)
 	c.UpdateProgress(n)
 	return n, nil
 }
